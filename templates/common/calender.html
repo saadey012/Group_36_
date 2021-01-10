@@ -1,0 +1,621 @@
+{%extends 'common/base.html'%}
+{%load static%}
+{%block wactive %}active {%endblock%}
+
+<!DOCTYPE html>
+
+{%block container%}
+   <!-- BEGIN PAGE LEVEL STYLE -->
+   <link href="{%static '' %}vendor/plugins/fullcalendar/fullcalendar.css" rel="stylesheet" type="text/css" />
+   <link href="{%static '' %}vendor/plugins/fullcalendar/custom-fullcalendar.advance.css" rel="stylesheet" type="text/css" />
+   <link href="{%static '' %}vendor/plugins/flatpickr/flatpickr.css" rel="stylesheet" type="text/css">
+   <link href="{%static '' %}vendor/plugins/flatpickr/custom-flatpickr.css" rel="stylesheet" type="text/css">
+   <link href="{%static '' %}vendor/assets/css/forms/theme-checkbox-radio.css" rel="stylesheet" type="text/css" />
+   <!-- END PAGE LEVEL STYLE -->
+    <div class="modal fade" id="addContactModal" tabindex="-1" role="dialog" aria-labelledby="addContactModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 60%;" role="document">
+            <div class="modal-content">
+                <div class="modal-body">         
+                    <div class="widget-header">
+                        <div class="row">
+                            <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+                                <h4>Add Work Schedule</h4>
+                            </div>                                                                        
+                        </div>
+                    </div>
+                    <div class="widget-content widget-content-area">
+                        <form id="add_vendor_form" method="POST">
+                            {%csrf_token%}
+                            <input type="hidden" name="type" value="add">
+                          
+                            <div class="form-row mb-4">
+                                
+                                <div class="form-group col-md-6">
+                                    <label for="test_id">Test Id</label>
+                                    <input  type="text" name="test_id" class="form-control" id="test_id">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="test_number">Test Number</label>
+                                    <input  type="text" name="test_number" class="form-control" id="test_number">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="test_date"> Test Date</label>
+                                    <input  type="date" name="test_date" class="form-control" id="test_date" >
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="patient"> Patient</label>
+                                    <select class="form-control" required name="patient" id="patient">
+                                        <option value="">Please select</option>
+                                        {%for p in patients%}
+                                        <option value="{{p.id}}">{{p.user_name}} {{p.user_last_name}}</option>
+                                      {%endfor%}
+
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="test_type"> Test Type</label>
+                                    <select class="form-control" name="test_type" id="test_type">
+                                        <option value="">Please select</option>
+                                        <option value="B">Blood</option>
+                                        <option value="C">Corona</option>
+
+                                    </select>
+                                </div>
+
+
+                                
+                             
+                            </div>
+                           
+                            <button id="btn-edit" type="submit" class="float-left btn primary">Submit</button>
+    
+                            <button style="margin-left: 20px;" class="btn" data-dismiss="modal"> <i class="flaticon-delete-1"></i> Discard</button>
+                        </form>
+                    </div>   
+                </div>
+                
+            </div>
+        </div>
+    </div>
+ 
+    <!--  BEGIN MAIN CONTAINER  -->
+    <div class="main-container" id="container">
+
+        <div class="overlay"></div>
+        <div class="search-overlay"></div>
+
+        <!--  BEGIN CONTENT AREA  -->
+        <div id="content" class="main-content">
+            
+            <div class="container" style="max-width: 100% !important;">
+                <div class="container">
+
+                 
+
+                    <div class="row layout-top-spacing">
+                      
+                        
+                        <div class="row layout-top-spacing" id="cancel-row">
+                            <div class="col-xl-12 col-lg-12 col-md-12">
+                                <div class="statbox widget box box-shadow">
+                                    <div class="widget-content widget-content-area">
+                                        <div class="calendar-upper-section">
+                                            <div class="row">
+                                                <div class="col-md-8 col-12">
+                                                    <!-- <div class="labels">
+                                                        <p class="label label-primary">Work</p>
+                                                        <p class="label label-warning">Travel</p>
+                                                        <p class="label label-success">Personal</p>
+                                                        <p class="label label-danger">Important</p>
+                                                    </div> -->
+                                                </div>                                                
+                                                <div class="col-md-4 col-12">
+                                                   
+                                                    <form action="javascript:void(0);" class="form-horizontal mt-md-0 mt-3 text-md-right text-center">
+                                                        
+                                                        <button id="myBtn" type="button" style="display: {%if request.session.user_type_value == "D" %} none; {%endif%}" class="btn btn-primary">{%if request.session.user_type_value == "A" %}<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar mr-2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Add Work Schedule {%endif%}</button>
+                                                    
+
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="calendar"></div>
+                                    </div>
+                                </div>
+                            </div>
+        
+                            <!-- The Modal -->
+                            <div id="addEventsModal" class="modal animated fadeIn">
+        
+                                <div class="modal-dialog modal-dialog-centered">
+                                    
+                                    <!-- Modal content -->
+                                    <div class="modal-content">
+        
+                                        <div class="modal-body">
+        
+                                            <span class="close">&times;</span>
+        
+                                            <div class="add-edit-event-box">
+                                                <div class="add-edit-event-content">
+                                                    <h5 class="add-event-title modal-title">Add Work Schedule</h5>
+                                                    <h5 class="edit-event-title modal-title">Edit Work Schedule</h5>
+        
+                                                    <form id="schedule_form" method="POST" class="">
+        {% csrf_token %}
+        <input type="hidden" id="schedule_form_type" name="type" value="add">
+        <input type="hidden" id="schedule_form_id" name="id" value="">
+                                                        <div class="row">
+        
+                                                            <div class="col-md-12">
+                                                                <label for="doctor" class="">Doctor:</label>
+                                                                <div class="d-flex event-title">
+                                                                    <select class="form-control" required name="doctor" id="doctor">
+                                                                        <option value="">Please select</option>
+                                                                        {%for d in doctors%}
+                                                                        <option value="{{d.id}}">{{d.user_name}} {{d.user_last_name}}</option>
+                                                                      {%endfor%}
+                                
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+        
+                                                            <div class="col-md-6 col-sm-6 col-12">
+                                                                <div class="form-group start-date">
+                                                                    <label for="start-date" class="">From:</label>
+                                                                    <div class="d-flex">
+                                                                        <input id="start-date" name="start" placeholder="Start Date" class="form-control" type="text">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6 col-sm-6 col-12">
+                                                                <div class="form-group end-date">
+                                                                    <label for="end-date" class="">To:</label>
+                                                                    <div class="d-flex">
+                                                                        <input id="end-date" placeholder="End Date" name="end" type="text" class="form-control">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+        
+                  
+        
+                                                     
+        
+                                                    </form>
+                                                </div>
+                                            </div>
+        
+                                        </div>
+        
+                                        <div class="modal-footer">
+                                            <button id="discard" class="btn" data-dismiss="modal">Discard</button>
+                                            <button id="add-e" class="btn">Add Work Schedule</button>
+                                            <button id="edit-event" class="btn">Save</button>
+                                        </div>
+        
+                                    </div>
+        
+                                </div>
+        
+                            </div>
+        
+                        </div>
+                    
+
+                     
+
+                    </div>
+
+                </div>
+                </div>
+       
+        </div>
+        <!--  END CONTENT AREA  -->
+
+    </div>
+    <!-- END MAIN CONTAINER -->
+
+    {%endblock%}
+    
+ 
+{%block extrajs%}
+   <!-- BEGIN PAGE LEVEL SCRIPTS -->
+   <script src="{%static '' %}vendor/plugins/fullcalendar/moment.min.js"></script>
+   <script src="{%static '' %}vendor/plugins/flatpickr/flatpickr.js"></script>
+   <script src="{%static '' %}vendor/plugins/fullcalendar/fullcalendar.min.js"></script>
+   <!-- END PAGE LEVEL SCRIPTS -->
+    <script>
+        checkall('todoAll', 'todochkbox');
+        $('[data-toggle="tooltip"]').tooltip()
+    </script>
+
+    <script>
+       var DeletePatient = (id)=>{
+        console.log(id);
+            swal({
+      title: "Are you sure?",
+      text: "You are about to Delete the Test Data,Are you sure?",
+      icon: "warning",
+      buttons: true,
+      dangerMode: true,
+    })
+    .then((willDelete) => {
+        console.log(willDelete);
+      if (willDelete) {
+        $.post( "{% url 'tests' %}", {type:"delete", id,csrfmiddlewaretoken: '{{ csrf_token }}'})
+            .done(function( data ) {
+    
+    
+            })
+      }
+      document.location.reload()
+      })
+          
+         
+       }
+    </script>
+
+    <script>
+
+  $('form').submit(function (ev) {
+    
+    
+    $('button').prop('disabled',true)
+    
+    ev.preventDefault();
+    
+    if (this.method != 'get'){
+    var formData = new FormData($(this)[0]);
+    
+    
+    
+    $.ajax({
+    type: 'POST',
+    url: "{%url 'work_schedule'%}",
+    data: formData,
+    async: true,
+    cache: false,
+    contentType: false,
+    processData: false,
+    success: function (data) {
+    
+    $('button').prop('disabled',false)
+    
+    console.log(data)
+    
+    if (data.status=='success'){
+       
+    swal({  
+        text: data.message,        
+        icon: "success",
+        timer: 3000,
+        }).then(function () { window.location= '{%url "work_schedule"%}'}, 2000)
+    }
+    else{
+        swal({  
+        text: data.message,        
+        icon: "warning",
+        timer: 3000,
+        })
+    }
+    
+    
+    
+    }
+    
+    });
+    
+    
+    }
+    else{
+    
+    this.submit()
+    
+    }
+    
+    
+    
+    });
+    
+   
+    </script>
+ <script>
+     $(document).ready(function() {
+
+// Get the modal
+var modal = document.getElementById("addEventsModal");
+
+// Get the button that opens the modal
+var btn = document.getElementById("myBtn");
+
+// Get the Add Event button
+var addEvent = document.getElementById("add-e");
+// Get the Edit Event button
+var editEvent = document.getElementById("edit-event");
+// Get the Discard Modal button
+var discardModal = document.querySelectorAll("[data-dismiss='modal']")[0];
+
+// Get the Add Event button
+var addEventTitle = document.getElementsByClassName("add-event-title")[0];
+// Get the Edit Event button
+var editEventTitle = document.getElementsByClassName("edit-event-title")[0];
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// Get the all <input> elements insdie the modal
+var input = document.querySelectorAll('input[type="text"]');
+var radioInput = document.querySelectorAll('input[type="radio"]');
+
+// Get the all <textarea> elements insdie the modal
+var textarea = document.getElementsByTagName('textarea');
+
+// Create BackDrop ( Overlay ) Element
+function createBackdropElement () {
+    var btn = document.createElement("div");
+    btn.setAttribute('class', 'modal-backdrop fade show')
+    document.body.appendChild(btn);
+}
+
+// Reset radio buttons
+
+function clearRadioGroup(GroupName) {
+  var ele = document.getElementsByName(GroupName);
+    for(var i=0;i<ele.length;i++)
+    ele[i].checked = false;
+}
+
+// Reset Modal Data on when modal gets closed
+function modalResetData() {
+    modal.style.display = "none";
+    for (i = 0; i < input.length; i++) {
+        input[i].value = '';
+    }
+    for (j = 0; j < textarea.length; j++) {
+        textarea[j].value = '';
+      i
+    }
+    clearRadioGroup("marker");
+    // Get Modal Backdrop
+    var getModalBackdrop = document.getElementsByClassName('modal-backdrop')[0];
+    document.body.removeChild(getModalBackdrop)
+}
+
+// When the user clicks on the button, open the modal
+btn.onclick = function() {
+    modal.style.display = "block";
+    addEvent.style.display = 'block';
+    editEvent.style.display = 'none';
+    addEventTitle.style.display = 'block';
+    editEventTitle.style.display = 'none';
+    document.getElementsByTagName('body')[0].style.overflow = 'hidden';
+    createBackdropElement();
+    enableDatePicker();
+}
+
+// Clear Data and close the modal when the user clicks on Discard button
+discardModal.onclick = function() {
+    modalResetData();
+    document.getElementsByTagName('body')[0].removeAttribute('style');
+}
+
+// Clear Data and close the modal when the user clicks on <span> (x).
+span.onclick = function() {
+    modalResetData();
+    document.getElementsByTagName('body')[0].removeAttribute('style');
+}
+
+// Clear Data and close the modal when the user clicks anywhere outside of the modal.
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modalResetData();
+        document.getElementsByTagName('body')[0].removeAttribute('style');
+    }
+}
+
+newDate = new Date()
+monthArray = [ '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+
+function getDynamicMonth( monthOrder ) {
+    var getNumericMonth = parseInt(monthArray[newDate.getMonth()]);
+    var getNumericMonthInc = parseInt(monthArray[newDate.getMonth()]) + 1;
+    var getNumericMonthDec = parseInt(monthArray[newDate.getMonth()]) - 1;
+
+    if (monthOrder === 'default') {
+
+        if (getNumericMonth < 10 ) {
+            return '0' + getNumericMonth;
+        } else if (getNumericMonth >= 10) {
+            return getNumericMonth;
+        }
+
+    } else if (monthOrder === 'inc') {
+
+        if (getNumericMonthInc < 10 ) {
+            return '0' + getNumericMonthInc;
+        } else if (getNumericMonthInc >= 10) {
+            return getNumericMonthInc;
+        }
+
+    } else if (monthOrder === 'dec') {
+
+        if (getNumericMonthDec < 10 ) {
+            return '0' + getNumericMonthDec;
+        } else if (getNumericMonthDec >= 10) {
+            return getNumericMonthDec;
+        }
+    }
+}
+
+/* initialize the calendar
+-----------------------------------------------------------------*/
+
+var calendar = $('#calendar').fullCalendar({
+    header: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'month,agendaWeek,agendaDay'
+    },
+    events: [
+        {%for c in calendar%}
+        {
+            id: '{{c.id}}',
+            title:'{{c.doctor.user_name}} - {{c.doctor.user_id}}',
+            start:  moment('{{c.start|date:"c"}}'),
+            end: moment('{{c.end|date:"c"}}'),
+            className: "bg-primary",
+            description: '{{c.start}} - {{c.end}}'
+        },
+{%endfor%}
+
+    ],
+    editable: {%if request.session.user_type_value == "A" %} true {%else%} false {%endif%},
+    eventLimit: true,
+    eventMouseover: function(event, jsEvent, view) {
+        $(this).attr('id', event.id);
+
+        $('#'+event.id).popover({
+            template: '<div class="popover popover-primary" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+            title: event.title,
+            content: event.description,
+            placement: 'top',
+        });
+
+        $('#'+event.id).popover('show');
+    },
+    eventMouseout: function(event, jsEvent, view) {
+        $('#'+event.id).popover('hide');
+    },
+    {%if request.session.user_type_value == "A" %}
+    eventClick: function(info) {
+
+        addEvent.style.display = 'none';
+        editEvent.style.display = 'block';
+
+        addEventTitle.style.display = 'none';
+        editEventTitle.style.display = 'block';
+        modal.style.display = "block";
+        document.getElementsByTagName('body')[0].style.overflow = 'hidden';
+        createBackdropElement();
+
+        // Calendar Event Featch
+        var eventTitle = info.title;
+        var eventDescription = info.description;
+
+        // Task Modal Input
+        var taskTitle = $('#write-e');
+        var taskTitleValue = taskTitle.val(eventTitle);
+
+     
+
+        var taskInputStarttDate = $("#start-date");
+        var taskInputStarttDateValue = taskInputStarttDate.val(info.start.format("YYYY-MM-DD HH:mm:ss"));
+
+        var taskInputEndDate = $("#end-date");
+        var taskInputEndtDateValue = taskInputEndDate.val(info.end.format("YYYY-MM-DD HH:mm:ss"));
+    
+        var startDate = flatpickr(document.getElementById('start-date'), {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            defaultDate: info.start.format("YYYY-MM-DD HH:mm:ss"),
+        });
+
+        var abv = startDate.config.onChange.push(function(selectedDates, dateStr, instance) {
+            var endtDate = flatpickr(document.getElementById('end-date'), {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                minDate: dateStr
+            });
+        })
+
+        var endtDate = flatpickr(document.getElementById('end-date'), {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            defaultDate: info.end.format("YYYY-MM-DD HH:mm:ss"),
+            minDate: info.start.format("YYYY-MM-DD HH:mm:ss")
+        });
+
+        $('#edit-event').off('click').on('click', function(event) {
+            event.preventDefault();
+            /* Act on the event */
+            $('#schedule_form_id').val(info.id)
+
+            $('#schedule_form_type').val('edit')
+         $('#schedule_form').submit()
+        });
+    }
+    {%endif%}
+})
+
+
+function enableDatePicker() {
+    var startDate = flatpickr(document.getElementById('start-date'), {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: new Date()
+    });
+
+    var abv = startDate.config.onChange.push(function(selectedDates, dateStr, instance) {
+
+        var endtDate = flatpickr(document.getElementById('end-date'), {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            minDate: dateStr
+        });
+    })
+
+    var endtDate = flatpickr(document.getElementById('end-date'), {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        minDate: new Date()
+    });
+}
+
+
+function randomString(length, chars) {
+    var result = '';
+    for (var i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
+    return result;
+}
+$("#add-e").off('click').on('click', function(event) {
+    $('#schedule_form_type').val('add')
+
+    $('#schedule_form').submit()
+});
+
+
+// Setting dynamic style ( padding ) of the highlited ( current ) date
+
+function setCurrentDateHighlightStyle() {
+    getCurrentDate = $('.fc-content-skeleton .fc-today').attr('data-date');
+    if (getCurrentDate === undefined) {
+        return;
+    }
+    splitDate = getCurrentDate.split('-');
+    if (splitDate[2] < 10) {
+        $('.fc-content-skeleton .fc-today .fc-day-number').css('padding', '3px 8px');
+    } else if (splitDate[2] >= 10) {
+        $('.fc-content-skeleton .fc-today .fc-day-number').css('padding', '3px 4px');
+    }
+}
+setCurrentDateHighlightStyle();
+
+const mailScroll = new PerfectScrollbar('.fc-scroller', {
+    suppressScrollX : true
+});
+
+var fcButtons = document.getElementsByClassName('fc-button');
+for(var i = 0; i < fcButtons.length; i++) {
+    fcButtons[i].addEventListener('click', function() {
+        const mailScroll = new PerfectScrollbar('.fc-scroller', {
+            suppressScrollX : true
+        });        
+        $('.fc-scroller').animate({ scrollTop: 0 }, 100);
+        setCurrentDateHighlightStyle();
+    })
+}
+});
+ </script>
+    {%endblock%}
